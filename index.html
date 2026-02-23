@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+    <title>Expense Tracker</title>
+  
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#ff7a26" />
+  
+    <!-- iOS Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+  
+    <link rel="stylesheet" href="styles.css" />
+  
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Auth screen (login / sign up) -->
+    <div id="authScreen" class="auth-screen">
+      <div class="auth-card">
+        <h1 class="auth-title">Expense Tracker</h1>
+        <p class="auth-subtitle">Sign in to continue</p>
+
+        <form id="loginForm" class="auth-form">
+          <div class="form-row">
+            <label for="loginUsername">Username</label>
+            <input type="text" id="loginUsername" required placeholder="Username" autocomplete="username" />
+          </div>
+          <div class="form-row">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required placeholder="Password" autocomplete="current-password" />
+          </div>
+          <button type="submit" class="primary-btn auth-btn">Login</button>
+          <button type="button" id="showSignupBtn" class="btn-text auth-link">New user? Sign up</button>
+        </form>
+
+        <form id="signupForm" class="auth-form" style="display: none;">
+          <div class="form-row">
+            <label for="signupUsername">Username</label>
+            <input type="text" id="signupUsername" required placeholder="Choose username" autocomplete="username" />
+          </div>
+          <div class="form-row">
+            <label for="signupPassword">Password</label>
+            <input type="password" id="signupPassword" required placeholder="Choose password" minlength="4" />
+          </div>
+          <div class="form-row">
+            <label for="signupConfirm">Confirm password</label>
+            <input type="password" id="signupConfirm" required placeholder="Confirm password" />
+          </div>
+          <button type="submit" class="primary-btn auth-btn">Sign up</button>
+          <button type="button" id="showLoginBtn" class="btn-text auth-link">Back to Login</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="appShell" class="app-shell" style="display: none;">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar__profile">
+          <div class="avatar" id="sidebarUserInitial">?</div>
+          <div>
+            <div class="sidebar__name" id="sidebarUserName">—</div>
+            <div class="sidebar__role">Personal Expense</div>
+          </div>
+        </div>
+
+        <nav class="sidebar__nav">
+          <button class="nav-item is-active" data-section="dashboard">
+            <span class="nav-item__icon">🏠</span>
+            <span class="nav-item__label">Dashboard</span>
+          </button>
+          <button class="nav-item" data-section="transactions">
+            <span class="nav-item__icon">📄</span>
+            <span class="nav-item__label">Transactions</span>
+          </button>
+          <button class="nav-item" data-section="reports">
+            <span class="nav-item__icon">📊</span>
+            <span class="nav-item__label">Reports</span>
+          </button>
+        </nav>
+
+        <div class="sidebar__footer">
+          <button id="logoutBtn" class="secondary-btn sidebar__cta" type="button">Log out</button>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="main">
+        <header class="topbar">
+          <div class="topbar__title">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <h1>Dashboard</h1>
+              <button id="remainingBalanceBtn" class="pill pill--balance" type="button">
+                <span>Remaining Balance</span>
+                <strong id="remainingBalanceDisplay">₹0</strong>
+              </button>
+            </div>
+            <p>Overview of your monthly spending</p>
+          </div>
+          <div class="topbar__controls">
+            <div class="pill">
+              <span>Month</span>
+              <select id="monthSelect"></select>
+            </div>
+            <button
+              id="incomeButton"
+              class="pill pill--secondary"
+              type="button"
+            >
+              <span>Monthly Income</span>
+              <strong id="cashReserveDisplay">₹0</strong>
+            </button>
+            <button id="openAddModalBtn" class="primary-btn" type="button">
+              Add Expense
+            </button>
+            <button id="resetDataBtn" class="secondary-btn" type="button">
+              Reset Data
+            </button>
+          </div>
+        </header>
+
+        <!-- Sections -->
+        <section id="dashboardSection" class="section is-active">
+          <div class="grid grid--summary">
+            <article class="card card--accent">
+              <header class="card__header">
+                <h2>Total This Month</h2>
+                <span class="badge badge--pill">All Categories</span>
+              </header>
+              <div class="card__body">
+                <div class="metric-main" id="totalThisMonth">₹0</div>
+                <div class="metric-sub">
+                  <span id="monthChangeLabel">vs last month</span>
+                  <span id="monthChangeValue" class="metric-change">—</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <header class="card__header">
+                <h2>Category Breakdown</h2>
+              </header>
+              <div class="card__body card__body--split">
+                <ul class="category-list" id="categorySummaryList">
+                  <!-- Filled by JS -->
+                </ul>
+                <div class="mini-chart-wrapper">
+                  <canvas id="categoryDonutChart"></canvas>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <header class="card__header">
+                <h2>Highlights</h2>
+              </header>
+              <div class="card__body highlights">
+                <div class="highlight">
+                  <span class="highlight__label">Top Category</span>
+                  <span id="topCategoryValue" class="highlight__value">—</span>
+                </div>
+                <div class="highlight">
+                  <span class="highlight__label">Largest Expense</span>
+                  <span id="largestExpenseValue" class="highlight__value">
+                    —
+                  </span>
+                </div>
+                <div class="highlight">
+                  <span class="highlight__label">Average / Day</span>
+                  <span id="avgPerDayValue" class="highlight__value">—</span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="grid grid--charts">
+            <article class="card">
+              <header class="card__header">
+                <h2>Spending by Category</h2>
+              </header>
+              <div class="card__body chart-card">
+                <canvas id="categoryBarChart"></canvas>
+              </div>
+            </article>
+
+            <article class="card">
+              <header class="card__header">
+                <h2>Monthly Trend</h2>
+              </header>
+              <div class="card__body chart-card">
+                <canvas id="monthlyLineChart"></canvas>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="transactionsSection" class="section">
+          <header class="section__header">
+            <h2>Transactions</h2>
+            <button id="openAddModalBtnTable" class="primary-btn">
+              Add Expense
+            </button>
+          </header>
+          <div class="card table-card">
+            <div class="card__header card__header--table">
+              <h3>Expenses for selected month</h3>
+            </div>
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th class="table__amount-col">Amount</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="transactionsTableBody">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="reportsSection" class="section">
+          <header class="section__header">
+            <h2>Reports & Goals</h2>
+          </header>
+          <div class="grid grid--reports">
+            <article class="card">
+              <header class="card__header">
+                <h3>This Month Summary</h3>
+              </header>
+              <div class="card__body" id="reportsSummaryCard">
+                <p id="reportsSummaryText">Loading…</p>
+              </div>
+            </article>
+            <article class="card">
+              <header class="card__header">
+                <h3>Spending by Category</h3>
+              </header>
+              <div class="card__body" id="reportsCategoryCard">
+                <ul class="category-list" id="reportsCategoryList"></ul>
+              </div>
+            </article>
+            <article class="card">
+              <header class="card__header">
+                <h3>Tips</h3>
+              </header>
+              <div class="card__body">
+                <p>
+                  Use the <strong>Dashboard</strong> tab for charts and trends.
+                  Use <strong>Transactions</strong> to add, edit, or delete
+                  expenses for the selected month.
+                </p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Add/Edit Expense Modal -->
+    <div id="expenseModal" class="modal">
+      <div class="modal__backdrop"></div>
+      <div class="modal__dialog">
+        <header class="modal__header">
+          <h2 id="modalTitle">Add Expense</h2>
+          <button id="closeModalBtn" class="icon-btn" aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <form id="expenseForm" class="modal__body">
+          <input type="hidden" id="expenseId" />
+
+          <div class="form-row">
+            <label for="expenseDate">Date</label>
+            <input type="date" id="expenseDate" required />
+          </div>
+
+          <div class="form-row">
+            <label for="expenseCategory">Category</label>
+            <select id="expenseCategory" required>
+              <option value="">Select category</option>
+              <option value="Food">Food</option>
+              <option value="Fuel">Fuel</option>
+              <option value="Travel">Travel</option>
+              <option value="Personal">Personal</option>
+              <option value="Rent">Rent</option>
+              <option value="Personal Care">Personal Care</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label for="expenseDescription">Description</label>
+            <input
+              type="text"
+              id="expenseDescription"
+              placeholder="Optional note"
+            />
+          </div>
+
+          <div class="form-row">
+            <label for="expenseAmount">Amount</label>
+            <input
+              type="number"
+              id="expenseAmount"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <footer class="modal__footer">
+            <button type="button" id="cancelModalBtn" class="secondary-btn">
+              Cancel
+            </button>
+            <button type="submit" class="primary-btn">Save</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
+
